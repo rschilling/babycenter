@@ -5,6 +5,11 @@ package richard.schilling.newyorktimes;
  */
 public final class Constants {
 
+    public static final String ACTION_DETAIL_CACHED =
+            "richard.schilling.newyorktimes.ACTION_DETAIL_CACHED";
+
+    public static final String KEY_SECTION_NAME = "KEY_SECTION";
+
     // TODO: parameterize URL strings.
 
     public static String API_KEY = "a0214f17473349c11c3c7d70d7dde927:16:73780352";

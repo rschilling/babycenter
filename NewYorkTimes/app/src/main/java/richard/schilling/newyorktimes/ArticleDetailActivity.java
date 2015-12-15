@@ -31,7 +31,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own detail action", Snackbar.LENGTH_LONG)
+                Snackbar.make(view, "TODO: Detail action design needed ...", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
         });

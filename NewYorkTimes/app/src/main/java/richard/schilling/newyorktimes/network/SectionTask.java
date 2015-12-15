@@ -3,6 +3,8 @@ package richard.schilling.newyorktimes.network;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
@@ -17,6 +19,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import richard.schilling.newyorktimes.Constants;
+import richard.schilling.newyorktimes.Util;
 
 /**
  * Created by richard on 12/15/15.
@@ -31,6 +34,10 @@ public class SectionTask extends AsyncTask<Void, Void, Throwable> {
 
     @Override
     protected Throwable doInBackground(Void... voids) {
+
+        if (!Util.hasConnection(mContext)){
+            return new IOException("no network connectivity");
+        }
 
         try {
 
@@ -47,6 +54,8 @@ public class SectionTask extends AsyncTask<Void, Void, Throwable> {
                 sb.append(inputLine);
             }
 
+            urlConnection.disconnect();
+
             SharedPreferences.Editor editor =
                     PreferenceManager.getDefaultSharedPreferences(mContext).edit();
             editor.putString(Constants.PREF_SECTION_CONTENT, sb.toString());
@@ -54,7 +63,6 @@ public class SectionTask extends AsyncTask<Void, Void, Throwable> {
 
             mContext.sendBroadcast(new Intent(Constants.ACTION_SECTIONS_CACHED));
 
-            urlConnection.disconnect();
 
 
         } catch (MalformedURLException e) {

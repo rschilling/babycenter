@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -133,6 +135,7 @@ public class ArticleListFragment extends ListFragment {
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(Constants.ACTION_SECTIONS_CACHED);
+        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
 
         mReceiver = new UserInterfaceReceiver();
         getContext().registerReceiver(mReceiver, filter);
@@ -200,6 +203,14 @@ public class ArticleListFragment extends ListFragment {
         @Override
         public void onReceive(Context context, Intent intent) {
 
+            if (intent.getAction().equals(ConnectivityManager.CONNECTIVITY_ACTION)){
+
+                if (!Util.hasConnection(context)){
+                    Toast.makeText(context, "No network connectivity.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+
             if (intent.getAction().equals(Constants.ACTION_SECTIONS_CACHED)){
                 // parse the sections and update the list.
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
@@ -213,6 +224,8 @@ public class ArticleListFragment extends ListFragment {
 
                 JSONObject sectionObject = null;
                 try {
+
+
                     sectionObject = new JSONObject(sectionJson);
                     String status = sectionObject.getString("status");
                     if (!status.equals("OK")){
@@ -220,11 +233,19 @@ public class ArticleListFragment extends ListFragment {
                         return;
                     }
 
+                    DummyContent.ITEMS.clear();
+
                     JSONArray resultArray = sectionObject.getJSONArray("results");
                     for (int i = 0; i < resultArray.length(); i++){
                         JSONObject cur = resultArray.getJSONObject(i);
-                        Log.i("Fragment", "name: " + cur.getString("name"));
+                        String name = cur.getString("name");
+                        Log.i("Fragment", "name: " + name);
+                        DummyContent.addItem(new DummyContent.DummyItem(String.valueOf(i),
+                                name, "Loading " + name + " ..."));
                     }
+
+
+                    mAdapter.notifyDataSetChanged();
                 } catch (JSONException e) {
                     Toast.makeText(context, "unable to process sections: " + e.getMessage(),
                             Toast.LENGTH_SHORT).show();

@@ -1,15 +1,26 @@
 package richard.schilling.newyorktimes;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import richard.schilling.newyorktimes.dummy.DummyContent;
+import richard.schilling.newyorktimes.network.DetailTask;
 
 /**
  * A fragment representing a single Article detail screen.
@@ -29,11 +40,15 @@ public class ArticleDetailFragment extends Fragment {
      */
     private DummyContent.DummyItem mItem;
 
+    private BroadcastReceiver mReceiver;
+
+
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
      * fragment (e.g. upon screen orientation changes).
      */
     public ArticleDetailFragment() {
+
     }
 
     @Override
@@ -51,7 +66,17 @@ public class ArticleDetailFragment extends Fragment {
             if (appBarLayout != null) {
                 appBarLayout.setTitle(mItem.content);
             }
+
+            try {
+                new DetailTask(getContext(),
+                        new URL("http://api.nytimes.com/svc/mostpopular/v2/mostviewed/Food/1.json?api-key=a0214f17473349c11c3c7d70d7dde927:16:73780352"))
+                        .execute(mItem.content);
+            } catch (MalformedURLException e) {
+                // do nothing.
+            }
+
         }
+
     }
 
     @Override
@@ -66,4 +91,47 @@ public class ArticleDetailFragment extends Fragment {
 
         return rootView;
     }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+
+        mReceiver = new DetailReceiver();
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Constants.ACTION_DETAIL_CACHED);
+        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+
+        getContext().registerReceiver(mReceiver, filter);
+
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        getContext().unregisterReceiver(mReceiver);
+    }
+
+    private class DetailReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
+                if (!Util.hasConnection(context)) {
+                    Toast.makeText(context, "No network connectivity.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+            }
+            if (intent.getAction().equals(Constants.ACTION_DETAIL_CACHED)) {
+
+                String section = intent.getStringExtra(Constants.KEY_SECTION_NAME);
+                Log.i("FragmentDetail", "section " + section);
+
+            }
+
+        }
+    }
+
 }
