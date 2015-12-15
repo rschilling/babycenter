@@ -4,14 +4,21 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ListFragment;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -23,6 +30,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import richard.schilling.newyorktimes.dummy.DummyContent;
+import richard.schilling.newyorktimes.network.SectionTask;
 
 /**
  * A list fragment representing a list of Articles. This fragment
@@ -53,6 +61,8 @@ public class ArticleListFragment extends ListFragment {
     private int mActivatedPosition = ListView.INVALID_POSITION;
 
     private ArrayAdapter mAdapter;
+
+    private BroadcastReceiver mReceiver;
 
     /**
      * A callback interface that all activities containing this fragment must
@@ -121,8 +131,15 @@ public class ArticleListFragment extends ListFragment {
 
         mCallbacks = (Callbacks) activity;
 
-        // register broadcast receiver and request data.
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Constants.ACTION_SECTIONS_CACHED);
 
+        mReceiver = new UserInterfaceReceiver();
+        getContext().registerReceiver(mReceiver, filter);
+
+
+        // register broadcast receiver and request data.
+        new SectionTask(activity).execute();
 
     }
 
@@ -132,6 +149,8 @@ public class ArticleListFragment extends ListFragment {
 
         // Reset the active callbacks interface to the dummy implementation.
         mCallbacks = sDummyCallbacks;
+
+        getContext().unregisterReceiver(mReceiver);
     }
 
     @Override
@@ -182,13 +201,43 @@ public class ArticleListFragment extends ListFragment {
         public void onReceive(Context context, Intent intent) {
 
             if (intent.getAction().equals(Constants.ACTION_SECTIONS_CACHED)){
-                // sections list has changed.  Update.
+                // parse the sections and update the list.
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+                String sectionJson = prefs.getString(Constants.PREF_SECTION_CONTENT, null);
+
+                if (sectionJson == null){
+                    throw new IllegalStateException(
+                            "ACTION_SECTIONS_CACHED received but no section data exists");
+
+                }
+
+                JSONObject sectionObject = null;
+                try {
+                    sectionObject = new JSONObject(sectionJson);
+                    String status = sectionObject.getString("status");
+                    if (!status.equals("OK")){
+                        Toast.makeText(context, "unable to process sections.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    JSONArray resultArray = sectionObject.getJSONArray("results");
+                    for (int i = 0; i < resultArray.length(); i++){
+                        JSONObject cur = resultArray.getJSONObject(i);
+                        Log.i("Fragment", "name: " + cur.getString("name"));
+                    }
+                } catch (JSONException e) {
+                    Toast.makeText(context, "unable to process sections: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                }
+
+
+
+
+
             }
 
         }
     }
 
-    private class FetchTask{
 
-    }
 }

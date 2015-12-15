@@ -77,8 +77,10 @@ public class SectionTask extends AsyncTask<Void, Void, Throwable> {
 
         // on the main thread - update the UI or show some issue.
 
-        Toast.makeText(mContext, "Unable to download section list: " + t.getMessage(),
-                Toast.LENGTH_SHORT).show();
+        if (t != null) {
+            Toast.makeText(mContext, "Unable to download section list: " + t.getMessage(),
+                    Toast.LENGTH_SHORT).show();
+        }
 
 
     }
